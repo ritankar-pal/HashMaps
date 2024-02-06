@@ -10,7 +10,7 @@ public class CustomMap<K,V> {
 
 	public CustomMap() {
 		this.buckets = new ArrayList<>();
-		this.numBuckets = 20;
+		this.numBuckets = 5;
 		for(int i = 0; i < this.numBuckets; i++) {
 			buckets.add(null);
 		}
@@ -48,6 +48,39 @@ public class CustomMap<K,V> {
 		return index;
 	}
 
+	
+	private void reHash() {
+		
+		ArrayList<MapNode<K, V>> temp = buckets;
+		buckets = new ArrayList<>();
+		
+		//double the size of the ArrayList<>
+		for(int i = 0; i < 2 * numBuckets; i++) {
+			buckets.add(null);
+		}
+		
+		count = 0; 
+		numBuckets = 2 * numBuckets;
+		
+		//iterating over the temp and putting each node of the LinkedList in each bucket of buckets:
+		for(int i = 0; i < temp.size(); i++) {
+			MapNode<K, V> head = temp.get(i);
+			
+			while(head != null) {
+				K key = head.key;
+				V value = head.value;
+				insert(key, value);
+				head = head.next;
+			}
+		}
+		
+	}
+	
+	public double loadFactor() {
+		return (1.0 * count) / numBuckets;
+	}
+	
+	
 	public void insert(K key, V value) {
 
 		int bucketIndex = getBucketIndex(key);
@@ -69,35 +102,23 @@ public class CustomMap<K,V> {
 		node.next = head;
 		buckets.set(bucketIndex, node);
 		count++;
+		
+		//If loadfactor is > 0.7 then we will increase the size of numBuckets:
+		double loadFactor = (1.0 * count) / numBuckets;
+		if(loadFactor > 0.7) {
+			reHash();
+		}
 
 	}
 	
-	
+
+
 	public V removeKey(K key) {
 		
 		int bucketIndex = getBucketIndex(key);
 
 		MapNode<K, V> head = buckets.get(bucketIndex);
 		MapNode<K, V> prev = null;
-
-//		//if head.key == key then remove the head and update the head:
-//		if(helper.key.equals(key)) {
-//			head = helper.next;
-//			buckets.set(bucketIndex, head);
-//			return helper.value;
-//		}
-//		
-//		
-//		//searching: check if the key is already present, if yes then just remove the node and return the value:
-//		while(helper != null) {
-//			if(helper.next != null && helper.next.key.equals(key)) {
-//				MapNode<K, V> node = helper.next;
-//				helper.next = helper.next.next;
-//				return node.value;
-//			}
-//			helper = helper.next;
-//		}
-		
 		
 		while(head != null) {
 			
@@ -108,12 +129,13 @@ public class CustomMap<K,V> {
 				else {
 					buckets.set(bucketIndex, head.next);
 				}
+				count--;
+				return head.value;
 			}
 			
 			prev = head;
 			head = head.next;
 		}
-		
 		
 		return null;
 	}
